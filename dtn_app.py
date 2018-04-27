@@ -3,26 +3,29 @@ import _thread, math, random, subprocess
 
 class DTNagent:
 
-    def __init__(self, probing=10, group='ff02::1', deadint=60, port=9999):
-
-        self.dead_interval  = deadint
+    def __init__(self, probing=0.2, group='ff02::1', deadint=60, port=9999):
+        self.hello_int = probing
         self.ipv6_group = group
-        self.handshake = []
+        self.historico = {}
         self.msgtable = {}
         self.deltable = {}
+        self.messageSent = 0
+        self.recente = {}
+        self.score = 0
         self.port = port
         self.name = sys.argv[1]
         self.news = []
         self.on = True
 
     def scheduler(self):
-        #try:
+        try:
             _thread.start_new_thread(self.udp_listener, ())
             _thread.start_new_thread(self.tcp_listener, ())
             _thread.start_new_thread(self.recv_input, ())
+            _thread.start_new_thread(self.clean_recent, ())
             self.run_sender() #anchor for the threads
-        #except:
-        #    print("Scheduling error!")
+        except:
+            print("Scheduling error!")
 
     def recv_input(self):
         try:
@@ -48,6 +51,15 @@ class DTNagent:
             self.on = False
             print("Shutting Down")
 
+    def clean_recent(self):
+        old = 20000
+        while self.on:
+            for x in self.recente:
+                if(int(time.time()) - self.recente[x] > old ):
+                    self.recente.pop(x, None)
+            time.sleep(old)
+
+
 
     def remove_dead(self):
         time.sleep(1)
@@ -67,8 +79,32 @@ class DTNagent:
         limit = 65500
         n = 0
         while self.on:
+            print("Enviei")
             self.remove_dead()
-            self.handshake = [self.name, len(self.msgtable), len(self.deltable)]
+            bytes_to_send = json.dumps([0, self.name, self.score]).encode()
+            s.sendto(bytes_to_send, (addrinfo[4][0], self.port))
+            time.sleep(self.hello_int)
+
+    def hello(self, array):
+        nome = array[1]
+        score = array[2]
+        print("Recebi hello de " + nome + " com score de " + str(score))
+        self.recente[nome] = int(time.time())
+        if nome in self.historico:
+            dados = self.historico[nome]
+            if int(time.time()) - dados[0][1] < 20000 :
+                dados[0][0] += 1
+            else:
+                if len(dados) == 5:
+                    dados.pop(-1)
+                    dados.insert(0, [1, int(time.time())])
+                else:
+                    dados.insert(0, [1, int(time.time())])
+        else:
+            self.historico[nome] = [[1, int(time.time())]]
+        print(self.historico)
+        print(self.recente)
+
 
 
 
@@ -88,9 +124,9 @@ class DTNagent:
             tipo = array[0]
             senderIP = (str(sender).rsplit('%', 1)[0])[2:] #Retirar apenas o IPv6
 
-            if tipo == 0: #handshake message
-                time.sleep(1)
-                #do handshake
+            if tipo == 0:
+                _thread.start_new_thread(self.hello, (array,))
+
 
 
     def get_news(self, data, msg_dest, timeout=0):

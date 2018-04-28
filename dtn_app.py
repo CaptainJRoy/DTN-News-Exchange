@@ -23,7 +23,7 @@ class DTNagent:
             _thread.start_new_thread(self.tcp_listener, ())
             _thread.start_new_thread(self.recv_input, ())
             _thread.start_new_thread(self.clean_recent, ())
-            self.run_sender() #anchor for the threads
+            self.hello_sender() #anchor for the threads
         except:
             print("Scheduling error!")
 
@@ -71,7 +71,7 @@ class DTNagent:
             del self.table["hello", self.name, self.msgtable]"""
 
 
-    def run_sender(self):
+    def hello_sender(self):
         addrinfo = socket.getaddrinfo(self.ipv6_group, None)[0]
         s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         ttl_bin = struct.pack('@i', 1)
@@ -79,16 +79,23 @@ class DTNagent:
         limit = 65500
         n = 0
         while self.on:
-            print("Enviei")
+            #print("Enviei")
             self.remove_dead()
             bytes_to_send = json.dumps([0, self.name, self.score]).encode()
             s.sendto(bytes_to_send, (addrinfo[4][0], self.port))
             time.sleep(self.hello_int)
 
+
+    #Fazer isto
+    def udp_sender(self, name):
+        for x in self.msgtable:
+            break;
+
+
     def hello(self, array):
         nome = array[1]
         score = array[2]
-        print("Recebi hello de " + nome + " com score de " + str(score))
+        #print("Recebi hello de " + nome + " com score de " + str(score))
         self.recente[nome] = int(time.time())
         if nome in self.historico:
             dados = self.historico[nome]
@@ -102,8 +109,8 @@ class DTNagent:
                     dados.insert(0, [1, int(time.time())])
         else:
             self.historico[nome] = [[1, int(time.time())]]
-        print(self.historico)
-        print(self.recente)
+        #print(self.historico)
+        #print(self.recente)
 
 
 
@@ -123,9 +130,22 @@ class DTNagent:
             array = json.loads(data.decode())
             tipo = array[0]
             senderIP = (str(sender).rsplit('%', 1)[0])[2:] #Retirar apenas o IPv6
-
             if tipo == 0:
-                _thread.start_new_thread(self.hello, (array,))
+                if array[1] != self.name:
+                    _thread.start_new_thread(self.hello, (array,))
+            elif tipo == 1:
+                if len(array[4]) == 0 or array[4][-1] != self.name:
+                    target = array[3]
+                    if target == self.name:
+                        self.deltable.append(array)
+                        tcp_sendnews = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                        tcp_sendnews.connect(('::1', self.port))
+                        tcp_sendnews.send(json.dumps(array[5]).encode())
+                        tcp_sendnews.close()
+                    else:
+                        array[4].append(self.name)
+
+
 
 
 
@@ -170,12 +190,15 @@ class DTNagent:
                 client_conn.close()
             else:
                 Verb= data[0] #GET OR NEWS
-                Object= data[1] #DESTINATION
+                Object = data[1] #DESTINATION
                 if Verb == "GET":
-                    #Gets the request and connects to the UDP server (the router) in localhost machine
-                    client_conn = conn
+                    if data[2] == self.name:
+                        bytes_to_send = json.dumps([1, "MSG", self.name, Object, [], ["NEWS", self.name, Object, self.news]]).encode()
+                    else:
+                        client_conn = conn
+                        bytes_to_send = json.dumps([1, "MSG", self.name, Object, [], [Verb, self.name, Object]]).encode() #ADD MSG header
+
                     udp_router.connect(('::1', self.port))
-                    bytes_to_send = json.dumps([3, "MSG", self.name, Object, [Verb, self.name, Object]]).encode() #ADD MSG header
                     udp_router.send(bytes_to_send)
                 elif Verb == "NEWS":
                     news=data[3]

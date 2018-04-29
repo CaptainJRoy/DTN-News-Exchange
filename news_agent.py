@@ -44,7 +44,19 @@ class NewsAgent:
                         sys.exit()
                     elif len(command) == 2:
                         if command[0] == 'get':
-                            self.getnews(command[1])
+                            if len(command) == 2:
+                                self.getnews(command[1], None)
+                            else:
+                                if command[3] == "s":
+                                    self.getnews(command[1], int(command[2]) * 1000)
+                                elif command[3] == "d":
+                                    self.getnews(command[1], int(command[2]) * 86400 * 1000)
+                                elif command[3] == "w":
+                                    self.getnews(command[1], int(command[2]) * 86400 * 1000 * 7)
+                                elif command[3] == "y":
+                                    self.getnews(command[1], int(command[2]) * 86400 * 1000 * 365)
+                                else:
+                                    self.printhelp()
                     else:
                         print("Invalid command")
                         self.printhelp()
@@ -87,18 +99,18 @@ class NewsAgent:
         print("client - act as a news client")
         print()
         print("To use as client:")
-        print("get [node_name] - Get news from the node")
+        print("get [node_name] [timeout] [s (seconds) /d (days) /w (week) /y (year)] - Get news from the node. ")
         print("help - show this message")
         print("quit - Exit application")
         print()
 
-    def getnews(self,server):
+    def getnews(self,server, timeout):
         print("Server started, trying to open socket.")
         getnews_s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         print("Trying to connect to application layer (adhoc router)")
         getnews_s.connect(('::1', self.router_port))
         print("Resquesting news to server: ", server)
-        bytes_to_send = json.dumps(["GET", server, None]).encode()
+        bytes_to_send = json.dumps(["GET", server, None, timeout]).encode()
         getnews_s.send(bytes_to_send)
         news=getnews_s.recv(1024)
         args = json.loads(news.decode())

@@ -7,11 +7,12 @@ class DTNagent:
         self.hello_int = probing
         self.ipv6_group = group
         self.historico = {}
-        self.msgtable = {}
+        self.msgtable = []
         self.deltable = {}
         self.messageSent = 0
         self.recente = {}
         self.score = 0
+        self.id = 0
         self.port = port
         self.name = sys.argv[1]
         self.news = []
@@ -58,6 +59,10 @@ class DTNagent:
                 if(int(time.time()) - self.recente[x] > old ):
                     self.recente.pop(x, None)
             time.sleep(old)
+            for x in self.msgtable:
+                if x[6] != None:
+                    if int(time.time()) - (x[6] + x[7]) > 0:
+                        self.msgtable.remove(x)
 
 
 
@@ -81,7 +86,7 @@ class DTNagent:
         while self.on:
             #print("Enviei")
             self.remove_dead()
-            bytes_to_send = json.dumps([0, self.name, self.score]).encode()
+            bytes_to_send = json.dumps([self.name, 0, self.score]).encode()
             s.sendto(bytes_to_send, (addrinfo[4][0], self.port))
             time.sleep(self.hello_int)
 
@@ -112,7 +117,25 @@ class DTNagent:
         #print(self.historico)
         #print(self.recente)
 
+    #Verifica se já tem a mensagem na msgtable e se sim, atualiza a path. Verifica tb na delTable
+    def have_message(self, array):
+        if array[4] in self.deltable and array[2] in self.deltable[array[4]]:
+            return False
+        for x in self.msgtable:
+            if array[4] == x[4]:
+                if array[2] == x[2]:
+                    for y in array[8]:
+                        if y not in x[8]:
+                            x[8].append(y)
+                    return True
+        return False
 
+    def delGet(self, array):
+        for x in self.msgtable:
+            if array[5] == x[4]:
+                if array[4] == x[5]:
+                    if array[7] > x[7]:
+                        self.delTable[x[4]].append(x[2])
 
 
     def udp_listener(self):
@@ -128,22 +151,35 @@ class DTNagent:
         while self.on:
             data, sender = s.recvfrom(65535)
             array = json.loads(data.decode())
+            nome = array[1]
             tipo = array[0]
             senderIP = (str(sender).rsplit('%', 1)[0])[2:] #Retirar apenas o IPv6
             if tipo == 0:
-                if array[1] != self.name:
+                if nome != self.name:
                     _thread.start_new_thread(self.hello, (array,))
             elif tipo == 1:
-                if len(array[4]) == 0 or array[4][-1] != self.name:
-                    target = array[3]
-                    if target == self.name:
-                        self.deltable.append(array)
-                        tcp_sendnews = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-                        tcp_sendnews.connect(('::1', self.port))
-                        tcp_sendnews.send(json.dumps(array[5]).encode())
-                        tcp_sendnews.close()
-                    else:
-                        array[4].append(self.name)
+                if array[6] == None or int(time.time()) - array[7] > array[6]:
+                    #Verificar se já recebi esta mensagem por outra pessoa
+                    if not self.have_message(array):
+                        self.msgtable.append(array)
+                        target = array[5]
+                        if target == self.name:
+                            tcp_sendnews = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                            tcp_sendnews.connect(('::1', self.port))
+                            tcp_sendnews.send(json.dumps(array[9]).encode())
+                            tcp_sendnews.close()
+                        else:
+                            array[8].append(self.name)
+            elif tipo == 2:
+                self.delGet(array)
+                if array[5] == self.name:
+                    tcp_sendnews = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+                    tcp_sendnews.connect(('::1', self.port))
+                    tcp_sendnews.send(json.dumps(array[9]).encode())
+                    tcp_sendnews.close()
+                else:
+                    self.msgtable.append(array)
+
 
 
 
@@ -192,11 +228,18 @@ class DTNagent:
                 Verb= data[0] #GET OR NEWS
                 Object = data[1] #DESTINATION
                 if Verb == "GET":
+                    #Responder a GET com as noticias
                     if data[2] == self.name:
-                        bytes_to_send = json.dumps([1, "MSG", self.name, Object, [], ["NEWS", self.name, Object, self.news]]).encode()
+                        if data[3] != None:
+                            timeout = data[3] - (int(time.time()) - data[4])
+                        else:
+                            timeout = data[3]
+                        bytes_to_send = json.dumps([2, self.name, self.id, "MSG", self.name, Object, timeout, int(time.time()), [], ["NEWS", self.name, Object, self.news]]).encode()
+                    #Iniciar pedido de noticias
                     else:
                         client_conn = conn
-                        bytes_to_send = json.dumps([1, "MSG", self.name, Object, [], [Verb, self.name, Object]]).encode() #ADD MSG header
+                        bytes_to_send = json.dumps([1, self.name, self.id, "MSG", self.name, Object, data[3], int(time.time()), [], ["GET", self.name, Object, data[3], int(time.time())]]).encode() #ADD MSG header
+                        self.id += 1
 
                     udp_router.connect(('::1', self.port))
                     udp_router.send(bytes_to_send)

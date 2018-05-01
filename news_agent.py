@@ -42,21 +42,20 @@ class NewsAgent:
                     elif command[0] == 'quit':
                         self.quit = 1
                         sys.exit()
-                    elif len(command) == 2:
-                        if command[0] == 'get':
-                            if len(command) == 2:
-                                self.getnews(command[1], None)
+                    if command[0] == 'get':
+                        if len(command) == 2:
+                            _thread.start_new_thread(self.getnews, (command[1], None, ))
+                        else:
+                            if command[3] == "s":
+                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 1000, ))
+                            elif command[3] == "d":
+                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000, ))
+                            elif command[3] == "w":
+                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000 * 7, ))
+                            elif command[3] == "y":
+                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000 * 365, ))
                             else:
-                                if command[3] == "s":
-                                    self.getnews(command[1], int(command[2]) * 1000)
-                                elif command[3] == "d":
-                                    self.getnews(command[1], int(command[2]) * 86400 * 1000)
-                                elif command[3] == "w":
-                                    self.getnews(command[1], int(command[2]) * 86400 * 1000 * 7)
-                                elif command[3] == "y":
-                                    self.getnews(command[1], int(command[2]) * 86400 * 1000 * 365)
-                                else:
-                                    self.printhelp()
+                                self.printhelp()
                     else:
                         print("Invalid command")
                         self.printhelp()

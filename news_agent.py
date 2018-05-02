@@ -44,16 +44,16 @@ class NewsAgent:
                         sys.exit()
                     if command[0] == 'get':
                         if len(command) == 2:
-                            _thread.start_new_thread(self.getnews, (command[1], None, ))
+                            self.getnews(command[1], None)
                         else:
                             if command[3] == "s":
-                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 1000, ))
+                                self.getnews(command[1], int(command[2]) )
                             elif command[3] == "d":
-                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000, ))
+                                self.getnews(command[1], int(command[2]) * 86400 )
                             elif command[3] == "w":
-                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000 * 7, ))
+                                self.getnews(command[1], int(command[2]) * 86400 * 7 )
                             elif command[3] == "y":
-                                _thread.start_new_thread(self.getnews, (command[1], int(command[2]) * 86400 * 1000 * 365, ))
+                                self.getnews(command[1], int(command[2]) * 86400 * 365 )
                             else:
                                 self.printhelp()
                     else:
@@ -109,6 +109,7 @@ class NewsAgent:
         print("Trying to connect to application layer (adhoc router)")
         getnews_s.connect(('::1', self.router_port))
         print("Resquesting news to server: ", server)
+        print(timeout)
         bytes_to_send = json.dumps(["GET", server, None, timeout]).encode()
         getnews_s.send(bytes_to_send)
         news=getnews_s.recv(1024)

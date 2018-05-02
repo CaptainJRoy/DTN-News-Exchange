@@ -24,15 +24,14 @@ class DTNagent:
             timeStamp = x[1]
             if name in list(self.recente):
                 rec = self.recente[name]
-                print(rec)
                 if int(time.time()) - int(rec[1]) < 20 and int(rec[0]) > 5:
                     res.append(name)
                 elif name in list(self.historico):
                     hist = self.historico[name]
                     calc = self.calc_desvio(hist)
                     if calc != None:
-                        if time != None:
-                            if int(time.time) + 2*calc <= timeStamp:
+                        if timeStamp != None:
+                            if int(time.time()) + 2*calc <= timeStamp:
                                 res.append(name)
                         else:
                             res.append(name)
@@ -98,13 +97,7 @@ class DTNagent:
                 if x[0] == 1 or x[0] == 2:
                     if x[6] != None:
                         if int(time.time()) > (int(x[6]) + int(x[7])):
-                            self.msgtable.remove(x)
-                            if x[4] in list(self.deltable):
-                                self.deltable[x[4]].append(x[2])
-                                self.score += 1
-                            else:
-                                self.deltable[x[4]] = [x[2]]
-                                self.score += 1
+                            self.delMessage(x)
             time.sleep(old)
             i+=1
             i %= 3
@@ -152,14 +145,16 @@ class DTNagent:
     #Verifica se já tem a mensagem na msgtable e se sim, atualiza a path. Verifica tb na delTable
     #Se recebeu noticias mais atualizadas que as que tem, apaga as antigas
     #Se recebeu noticias mais antigas que as que ja apagou, ignora
-    def have_message(self, array):
+    def have_message(self, array, ip):
         if array[0] == 3:
-            creator = array[3]
-            idd = array[1]
+            creator = array[1]
         else:
             creator = array[4]
-            idd = array[2]
+        idd = array[2]
         if creator in self.deltable and idd in self.deltable[creator]:
+            fwd_s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+            fwd_s.sendto(json.dumps([6, creator, idd]).encode(), (ip, self.port))
+            fwd_s.close()
             return True
         for x in list(self.msgtable):
             if array[0] != 3:
@@ -169,39 +164,43 @@ class DTNagent:
                         if y not in x[8]:
                             x[8].append(y)
                     return True
-                else:
-                    array[8].append(self.name)
             else:
-                if creator == x[3] and idd == x[1]:
+                if creator == x[1] and idd == x[2]:
                     for y in x[5]:
                         if y not in array[5]:
                             x[5].remove(y)
                     return True
         return False
 
+    def delMessage(self, array):
+        self.msgtable.remove(array)
+        if array[1] in self.deltable:
+            self.deltable[array[1]].append(array[2])
+            self.score += 1
+        else:
+            self.deltable[array[1]] = [array[2]]
+            self.score += 1
+
     def sendMessage(self, name, ip):
         fwd_s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         array = []
         for x in list(self.msgtable):
             if (x[0] == 1 or x[0] == 2) and x[5] == name:
-                if name not in x[8]:
-                    fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
-                    x[8].append(name)
-            elif x[0] == 3 and name in x[5]:
-                x[5].remove(name)
-                if len(x[5]) == 0:
-                    self.msgtable.remove(x)
-                    if x[1] in self.deltable:
-                        self.deltable[x[1]].append(x[2])
-                        self.score += 1
-                    else:
-                        self.deltable[x[1]] = [x[2]]
-                        self.score += 1
                 fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
-            elif (x[0] == 1 or x[0] == 2) and x[6] != None:
-                array.append([x[5], x[6] + x[7]])
-            else:
-                array.append([x[5], None])
+                self.delMessage(x)
+            elif x[0] == 3 and name in x[5]:
+                if len(x[5]) == 1:
+                    self.delMessage(x)
+                x[5].remove(name)
+                fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
+            elif (x[0] == 1 or x[0] == 2):
+                if x[6] != None:
+                    array.append([x[5], x[6] + x[7]])
+                else:
+                    array.append([x[5], None])
+            elif x[0] == 3:
+                for y in x[5]:
+                    array.append([y, None])
             if len(array) > 0:
                 fwd_s.sendto(json.dumps([4, array]).encode(), (ip, self.port))
         fwd_s.close()
@@ -212,56 +211,28 @@ class DTNagent:
         timestamp = array[7]
         for x in list(self.msgtable):
             if destination == x[4] and creator == x[5] and timestamp >= x[7]:
-                if x[4] in self.deltable:
-                    self.deltable[x[4]].append(x[2])
-                    self.score += 1
-                else:
-                    self.deltable[x[4]] = [x[2]]
-                    self.score += 1
-                self.msgtable.remove(x)
+                self.delMessage(x)
 
     def sendDelNews(self, array, ip):
         msg = [3, self.name, self.id, array[4], array[7], array[8]]
-        msg[5].remove(self.name)
+        self.msgtable.append(msg)
+        self.score += 1
+        msg[5].pop(len(msg[5])-1)
         if(len(msg[5]) == 0):
-            if msg[1] in self.deltable:
-                self.deltable[msg[1]].append(msg[2])
-                self.score += 1
-            else:
-                self.deltable[msg[1]] = [msg[2]]
-                self.score += 1
-        else:
-            self.msgtable.append(msg)
-            self.score += 1
+            self.delMessage(msg)
         fwd_s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         fwd_s.sendto(json.dumps(msg).encode(), (ip, self.port))
         fwd_s.close()
         self.id += 1
 
     def delNews(self, array):
+        self.msgtable.append(array)
+        self.score += 1
         for x in list(self.msgtable):
             if x[0] == 2 and x[5] == array[1] and x[4] == array[3] and x[7] <= array[4]:
-                print("Removi")
-                self.msgtable.remove(x)
-                if x[1] in self.deltable:
-                    self.deltable[x[1]].append(x[2])
-                    self.score += 1
-                else:
-                    self.deltable[x[1]] = [x[2]]
-                    self.score += 1
+                self.delMessage(x)
         if len(array[5]) == 0:
-            print("0")
-            if array[1] in self.deltable:
-                self.deltable[array[1]].append(array[2])
-                self.score += 1
-            else:
-                self.deltable[array[1]] = [array[2]]
-                self.score += 1
-        else:
-            print("idk")
-            self.msgtable.append(array)
-            self.score += 1
-
+            self.delMessage(array)
 
     def udp_listener(self):
         addrinfo = socket.getaddrinfo(self.ipv6_group, None)[0]
@@ -275,6 +246,9 @@ class DTNagent:
         while self.on:
             data, sender = s.recvfrom(65535)
             array = json.loads(data.decode())
+            if(array[0] != 0):
+                print("Recebi")
+                print(array)
             nome = array[1]
             tipo = array[0]
             senderIP = (str(sender).rsplit('%', 1)[0])[2:] #Retirar apenas o IPv6
@@ -284,8 +258,8 @@ class DTNagent:
                     self.sendMessage(nome, senderIP)
             elif tipo == 1:
                 if array[6] == None or int(time.time()) < (int(array[6]) + int(array[7])): #Verificar se está dentro do timeout
-                    if not self.have_message(array): #Verificar se já recebi esta mensagem por outra pessoa
-                        print(array)
+                    if not self.have_message(array, senderIP): #Verificar se já recebi esta mensagem por outra pessoa
+                        array[8].append(self.name)
                         self.msgtable.append(array)
                         self.score += 1
                         target = array[5]
@@ -297,26 +271,20 @@ class DTNagent:
                             self.score += 1
             elif tipo == 2:
                 if array[6] == None or int(time.time()) - array[7] > array[6]: #Verificar se está dentro do timeout
-                    if not self.have_message(array): #Verificar se já recebi esta mensagem por outra pessoa
-                        print(array)
+                    if not self.have_message(array, senderIP): #Verificar se já recebi esta mensagem por outra pessoa
                         self.delGet(array)
+                        array[8].append(self.name)
+                        self.msgtable.append(array)
+                        self.score += 1
                         if array[5] == self.name:
-                            if array[4] in self.deltable:
-                                self.deltable[array[4]].append(array[2])
-                                self.score += 1
-                            else:
-                                self.deltable[array[4]] = [array[2]]
-                                self.score += 1
+                            self.delMessage(array)
                             self.sendDelNews(array, senderIP)
                             tcp_sendnews = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
                             tcp_sendnews.connect(('::1', self.port))
                             tcp_sendnews.send(json.dumps(array[9]).encode())
                             tcp_sendnews.close()
-                        else:
-                            self.msgtable.append(array)
-                            self.score += 1
             elif tipo == 3:
-                if not self.have_message(array):
+                if not self.have_message(array, senderIP):
                     self.delNews(array)
             elif tipo == 4:
                 self.conhece(array[1], senderIP)
@@ -324,10 +292,21 @@ class DTNagent:
                 lista = array[1]
                 fwd_s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
                 for x in list(self.msgtable):
-                    if x[5] in lista:
-                        fwd_s.sendto(json.dumps(x).encode(), (senderIP, self.port))
+                    if x[0] == 1 or x[0] == 2:
+                        if x[5] in lista:
+                            fwd_s.sendto(json.dumps(x).encode(), (senderIP, self.port))
+                    elif x[0] == 3:
+                        for y in x[5]:
+                            if y in lista:
+                                fwd_s.sendto(json.dumps(x).encode(), (senderIP, self.port))
+                                break
                 fwd_s.close()
-
+            elif tipo == 6:
+                print("Recebi 6")
+                for x in list(self.msgtable):
+                    if x[2] == array[2] and x[1] == array[1]:
+                        self.delMessage(x)
+                        break
 
 
 

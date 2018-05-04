@@ -40,7 +40,7 @@ class DTNagent:
         entregar as mensagens antes do timeout acabarself.
         É assim adicionado ao array se comunicou recentemente com o nodo (está no array recente)
         ou se a função calc_desvio aplicado aos valores do historico com o nodo, devolve um tempo de modo
-        a que dê para enviar e devolver uma mensagem com esse tempo.
+        a que dê para enviar uma mensagem com esse tempo.
     """
     def conhece(self, array, senderIP):
         res = []
@@ -56,7 +56,7 @@ class DTNagent:
                     calc = self.calc_desvio(hist)
                     if calc != None:
                         if timeStamp != None:
-                            if int(time.time()) + 2*calc <= timeStamp:
+                            if int(time.time()) + calc <= timeStamp:
                                 res.append(name)
                         else:
                             res.append(name)
@@ -235,8 +235,8 @@ class DTNagent:
         nome = array[1]
         score = array[2]
         if nome not in self.recente:
-            self.score +=1
             self.recente[nome] = [1, int(time.time())]
+            self.score += 1
         else:
             x = self.recente[nome]
             self.recente[nome] = [x[0]+1, int(time.time())]
@@ -294,10 +294,8 @@ class DTNagent:
         self.msgtable.remove(array)
         if array[1] in self.deltable:
             self.deltable[array[1]].append(array[2])
-            self.score += 1
         else:
             self.deltable[array[1]] = [array[2]]
-            self.score += 1
 
     """
     Verifica consoante o nome dado, se existe alguma mensagem para lhe enviar.
@@ -314,6 +312,7 @@ class DTNagent:
         for x in list(self.msgtable):
             if (x[0] == 1 or x[0] == 2) and x[4] == name and name not in x[7]:
                 fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
+                self.score += 1
             elif (x[0] == 1 or x[0] == 2) and name not in x[7] and score > self.score and score > x[9]:
                 x[9] = score
                 fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
@@ -367,7 +366,6 @@ class DTNagent:
         msg = [3, self.name, self.id, array[1], array[2], array[7], [], timeout]
         self.id += 1
         self.msgtable.append(msg)
-        self.score += 1
         msg[6].append(msg[5].pop(len(msg[5])-1))
         msg[6].append(msg[5].pop(len(msg[5])-1))
         if(len(msg[5]) == 0):
@@ -445,6 +443,7 @@ class DTNagent:
                 self.msgtable.append(array)
                 self.score += 1
                 if array[4] == self.name:
+                    self.score += 1
                     self.delMessage(array)
                     self.sendDelMsg(array, senderIP)
                     if array[1] in self.gets:
@@ -452,7 +451,6 @@ class DTNagent:
                         tcp_sendnews.connect(('::1', self.port))
                         tcp_sendnews.send(json.dumps(array[8]).encode())
                         tcp_sendnews.close()
-                        self.score += 1
                         for x in list(self.gets):
                             if x == array[1]:
                                 self.gets.remove(x)
@@ -487,6 +485,7 @@ class DTNagent:
                 if x[4] in lista:
                     if name not in x[7]:
                         fwd_s.sendto(json.dumps(x).encode(), (senderIP, self.port))
+                        self.score += 1
                         if name not in x[7]:
                             x[7].append(name)
         fwd_s.close()

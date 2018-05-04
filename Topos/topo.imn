@@ -68,8 +68,8 @@ node n2 {
 	!
     }
     canvas c1
-    iconcoords {70.0 115.0}
-    labelcoords {70.0 139.0}
+    iconcoords {223.0 207.0}
+    labelcoords {223.0 231.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -117,8 +117,8 @@ node n3 {
 	!
     }
     canvas c1
-    iconcoords {600.0 115.0}
-    labelcoords {600.0 139.0}
+    iconcoords {270.0 510.0}
+    labelcoords {270.0 534.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -166,8 +166,8 @@ node n4 {
 	!
     }
     canvas c1
-    iconcoords {70.0 365.0}
-    labelcoords {70.0 389.0}
+    iconcoords {1075.0 315.0}
+    labelcoords {1075.0 339.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -215,8 +215,8 @@ node n5 {
 	!
     }
     canvas c1
-    iconcoords {1180.0 387.0}
-    labelcoords {1180.0 419.0}
+    iconcoords {916.0 219.0}
+    labelcoords {916.0 243.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -264,8 +264,8 @@ node n6 {
 	!
     }
     canvas c1
-    iconcoords {1320.0 678.0}
-    labelcoords {1320.0 710.0}
+    iconcoords {1277.0 756.0}
+    labelcoords {1277.0 780.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -313,8 +313,8 @@ node n7 {
 	!
     }
     canvas c1
-    iconcoords {796.0 381.0}
-    labelcoords {796.0 413.0}
+    iconcoords {1811.0 909.0}
+    labelcoords {1811.0 933.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -362,8 +362,8 @@ node n8 {
 	!
     }
     canvas c1
-    iconcoords {1834.0 116.0}
-    labelcoords {1834.0 148.0}
+    iconcoords {1878.0 623.0}
+    labelcoords {1878.0 647.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -411,8 +411,8 @@ node n9 {
 	!
     }
     canvas c1
-    iconcoords {130.0 989.0}
-    labelcoords {130.0 1021.0}
+    iconcoords {235.0 921.0}
+    labelcoords {235.0 945.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -460,8 +460,8 @@ node n10 {
 	!
     }
     canvas c1
-    iconcoords {55.0 92.0}
-    labelcoords {55.0 124.0}
+    iconcoords {108.0 923.0}
+    labelcoords {108.0 947.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -509,8 +509,8 @@ node n11 {
 	!
     }
     canvas c1
-    iconcoords {526.0 376.0}
-    labelcoords {526.0 408.0}
+    iconcoords {1496.0 423.0}
+    labelcoords {1496.0 432.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -558,8 +558,8 @@ node n12 {
 	!
     }
     canvas c1
-    iconcoords {952.0 106.0}
-    labelcoords {952.0 138.0}
+    iconcoords {867.0 26.0}
+    labelcoords {867.0 50.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -607,8 +607,8 @@ node n13 {
 	!
     }
     canvas c1
-    iconcoords {948.0 1002.0}
-    labelcoords {948.0 1034.0}
+    iconcoords {1334.0 1050.0}
+    labelcoords {1334.0 1074.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -656,8 +656,8 @@ node n14 {
 	!
     }
     canvas c1
-    iconcoords {1669.0 391.0}
-    labelcoords {1669.0 423.0}
+    iconcoords {1059.0 1062.0}
+    labelcoords {1059.0 1080.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -705,8 +705,8 @@ node n15 {
 	!
     }
     canvas c1
-    iconcoords {741.0 637.0}
-    labelcoords {741.0 669.0}
+    iconcoords {1651.0 51.0}
+    labelcoords {1651.0 75.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -754,8 +754,8 @@ node n16 {
 	!
     }
     canvas c1
-    iconcoords {1533.0 1022.0}
-    labelcoords {1533.0 1054.0}
+    iconcoords {1068.0 525.0}
+    labelcoords {1068.0 549.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra
@@ -803,8 +803,8 @@ node n17 {
 	!
     }
     canvas c1
-    iconcoords {145.0 803.0}
-    labelcoords {145.0 835.0}
+    iconcoords {65.0 22.0}
+    labelcoords {65.0 46.0}
     interface-peer {eth0 n1}
     custom-config {
 	custom-config-id service:zebra

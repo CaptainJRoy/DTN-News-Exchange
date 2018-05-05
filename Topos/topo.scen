@@ -100,7 +100,7 @@ $node_(15) set Y_ 51.0
 $node_(15) set Z_ 25.00
 $ns_ at 0.00 "$node_(15) setdest 1592.0 53.0 25.0"
 $ns_ at 10.00 "$node_(15) setdest 1530.0 102.0 25.0"
-$ns_ at 30.00 "$node_(15) setdest 1530.0 136.0 25.0"
+$ns_ at 15.00 "$node_(15) setdest 1530.0 136.0 25.0"
 $ns_ at 40.00 "$node_(15) setdest 1530.0 102.0 25.0"
 $ns_ at 45.00 "$node_(15) setdest 1592.0 53.0 25.0"
 $ns_ at 50.00 "$node_(15) setdest 1651.0 51.0 25.0"

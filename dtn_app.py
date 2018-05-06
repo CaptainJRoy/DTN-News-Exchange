@@ -106,12 +106,16 @@ class DTNagent:
     """
     def printhelp(self):
         print()
-        print("AER TP1 - News Agent 0.1")
+        print("AER TP2 - DTN News Agent 0.1")
         print()
         print("To use as client:")
         print("get [node_name] [timeout] [s (seconds) /d (days) /w (week) /y (year)] - Get news from the node. ")
         print("set [news] - Colocar noticias no nodo")
-        print("news - Ler as noticias do nodo")
+        print("historico - show history table")
+        print("recente - show recente table")
+        print("msgtable - show messages table")
+        print("news - show news from this node")
+        print("clear - clear screen")
         print("help - show this message")
         print("quit - Exit application")
         print()
@@ -204,7 +208,7 @@ class DTNagent:
             i %= 3
             if i == 0:
                 self.score = self.score / 2
-                for x in list(self.recente):
+                for x in list(self.msgtable):
                     x[9] = x[9] / 2
 
     """

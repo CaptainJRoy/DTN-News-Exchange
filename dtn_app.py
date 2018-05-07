@@ -32,7 +32,7 @@ class DTNagent:
         self.id = 0
         self.port = port
         self.name = sys.argv[1]
-        self.news = []
+        self.news = [self.name]
         self.on = True
 
     """
@@ -144,14 +144,10 @@ class DTNagent:
                         print("#####################")
                         print(self.recente)
                         print("#####################")
+                    elif command[0] == 'teste':
+                        self.score = int(command[1])
                     elif command[0] == "msgtable":
-                        print("#####################")
-                        for x in list(self.msgtable):
-                            path = ", ".join(x[7])
-                            print("-----------------------------")
-                            print("Tipo " + str(str(x[0])) + " ID: " + str(x[2]) + ". De " + str(x[1]) + " -> " + str(x[4]) + ". Timeout " + str(x[5]) + " s. Path: " + path + ". Score" + str(x[8]))
-                            print("-----------------------------")
-                        print("#####################")
+                        self.printMsgtable()
                     elif command[0] == "deltable":
                         print(self.deltable)
                     elif command[0] == "score":
@@ -184,6 +180,27 @@ class DTNagent:
             self.on = False
             print("Shutting Down")
 
+    def printMsgtable(self):
+        print("#####################")
+        for x in list(self.msgtable):
+            print("-----------------------------")
+            if x[0] == 1 or x[0] == 2:
+                path = ", ".join(x[7])
+                if x[0] == 1:
+                    tipo = "Get"
+                else:
+                    tipo = "News"
+                print("Mensagem " + tipo + " ID: " + str(x[2]) + ". De " + str(x[1]) + " -> " + str(x[4]) + ". Timeout " + str(x[5]) + " s. Path: " + path + ". Score " + str(x[9]))
+            else:
+                aPercorrer = ", ".join(x[5])
+                percorrido = ", ".join(x[6])
+                print("Mensagem Delete ID: " + str(x[2]) + " de " + str(x[1]) + ".Timeout " + str(x[7]) +  ". Mensagem a apagar: ( " + str(x[3]) + ", " + str(x[4]) + " ). Nodos a percorrer: " + aPercorrer + ", percorrido: " + percorrido)
+            print("-----------------------------")
+        print("#####################")
+        sys.stdout.write(self.name+ "#>")
+
+
+
     """
     Função que limpa todos os registos nas tabelas:
     @self.recent, limpando todos os nodos que realizaram contacto à mais de 20 s
@@ -209,7 +226,8 @@ class DTNagent:
             if i == 0:
                 self.score = self.score / 2
                 for x in list(self.msgtable):
-                    x[9] = x[9] / 2
+                    if x[0] == 1 or x[0] == 2:
+                        x[9] = x[9] / 2
 
     """
         Envia os pacotes hello periódicamente, dependendo da variável "self.hello_int".
@@ -254,10 +272,6 @@ class DTNagent:
                     dados.insert(0, int(time.time()))
         else:
             self.historico[nome] = [int(time.time())]
-        print("MsgTable")
-        print(self.msgtable)
-        print("DelTable")
-        print(self.deltable)
 
     """
     Verifica se já tem a mensagem a receber. Verifica inicialmente se faz parte das mensagens
@@ -298,8 +312,12 @@ class DTNagent:
         self.msgtable.remove(array)
         if array[1] in self.deltable:
             self.deltable[array[1]].append(array[2])
+            print(self.deltable)
+            sys.stdout.write(self.name+ "#>")
         else:
             self.deltable[array[1]] = [array[2]]
+            print(self.deltable)
+            sys.stdout.write(self.name+ "#>")
 
     """
     Verifica consoante o nome dado, se existe alguma mensagem para lhe enviar.
@@ -316,10 +334,15 @@ class DTNagent:
         for x in list(self.msgtable):
             if (x[0] == 1 or x[0] == 2) and x[4] == name and name not in x[7]:
                 fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
+                print("Enviada mensagem ( " + str(x[1]) + ", " + str(x[2]) + " ) para " + name + ". Destino")
+                sys.stdout.write(self.name+ "#>")
                 self.score += 1
             elif (x[0] == 1 or x[0] == 2) and name not in x[7] and score > self.score and score > x[9]:
                 x[9] = score
                 fwd_s.sendto(json.dumps(x).encode(), (ip, self.port))
+                print("Enviada mensagem ( " + str(x[1]) + ", " + str(x[2]) + " ) para " + name + ". Score")
+                x[7].append(name)
+                sys.stdout.write(self.name+ "#>")
             elif x[0] == 3 and (name in x[5] or name in x[6]):
                 if name in x[5]:
                     x[5].remove(name)
@@ -370,8 +393,11 @@ class DTNagent:
         msg = [3, self.name, self.id, array[1], array[2], array[7], [], timeout]
         self.id += 1
         self.msgtable.append(msg)
+        self.printMsgtable()
+        sys.stdout.write(self.name+ "#>")
         msg[6].append(msg[5].pop(len(msg[5])-1))
-        msg[6].append(msg[5].pop(len(msg[5])-1))
+        if len(msg[5]) != 0:
+            msg[6].append(msg[5].pop(len(msg[5])-1))
         if(len(msg[5]) == 0):
             self.delMessage(msg)
         fwd_s = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
@@ -384,6 +410,8 @@ class DTNagent:
     """
     def delMsgs(self, array):
         self.msgtable.append(array)
+        self.printMsgtable()
+        sys.stdout.write(self.name+ "#>")
         for x in list(self.msgtable):
             if (x[0] == 1 or x[0] == 2) and x[1] == array[3] and x[2] == array[4]:
                 self.delMessage(x)
@@ -419,6 +447,8 @@ class DTNagent:
             if not self.have_message(array, senderIP): #Verificar se já recebi esta mensagem por outra pessoa
                 array[7].append(self.name)
                 self.msgtable.append(array)
+                self.printMsgtable()
+                sys.stdout.write(self.name+ "#>")
                 self.score += 1
                 target = array[4]
                 if target == self.name: #Chegou ao destino
@@ -445,6 +475,8 @@ class DTNagent:
             if not self.have_message(array, senderIP): #Verificar se já recebi esta mensagem por outra pessoa
                 array[7].append(self.name)
                 self.msgtable.append(array)
+                self.printMsgtable()
+                sys.stdout.write(self.name+ "#>")
                 self.score += 1
                 if array[4] == self.name:
                     self.score += 1
@@ -492,6 +524,8 @@ class DTNagent:
                         self.score += 1
                         if name not in x[7]:
                             x[7].append(name)
+                        print("Enviada mensagem ( " + str(x[1]) + ", " + str(x[2]) + " ) para " + name + ". Conhece")
+                        sys.stdout.write(self.name+ "#>")
         fwd_s.close()
 
     """
@@ -575,9 +609,10 @@ class DTNagent:
             elif Verb == "NEWS":
                 news=data[3]
                 noticias = ". ".join(news)
-                print("######################################")
+                print("\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'")
                 print("Noticias de " + data[1] + " -> " + noticias)
-                print("######################################")
+                print("\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'\'")
+                sys.stdout.write(self.name+ "#>")
 
 
 if __name__ == '__main__':
